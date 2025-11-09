@@ -94,6 +94,10 @@ To run this project you will need to add the following environment variables to 
 
 `ENABLE_METADATA` This option allows you to enable scanning the metadata of your files. If this is enabled, TorBox will __attempt__ to find the correct metadata for your files in your TorBox account. This isn't perfect, so use with caution. If this option is `false` it skips scanning and places all of your video files in the `movies` folder. If it is enabled, TorBox will scan, and attempt to place your files into either the `movies` or `series` folders. Please also keep in mind that you will be subject to rate limiting of our search endpoint when using the metadata option. Seeing 429 errors will be common. Most of the time it is best to keep this option disabled unless you video player absolutely requires it. Also keep in mind, this unlocks the `instant` option, which can allow you to refresh every 6 minutes.
 
+`OPENROUTER_API_KEY` *(optional)*: Provide an OpenRouter API key to let the application request an LLM-based name suggestion for each `.strm` file. When set, the model carefully inspects the original filename and metadata and returns the best normalized title (including year/season/episode) plus a media type guess so that the filenames written to disk look consistent even when TorBox metadata is missing or imprecise. This can incur API usage for every file processed, so only enable it if you want the extra naming help.
+
+`OPENROUTER_MODEL` *(optional)*: Choose the OpenRouter model you want to use for naming suggestions. The default is `x-ai/grok-4-fast`, but you can set any valid OpenRouter-supported model name.
+
 ## 🐳 Running on Docker with one command (recommended)
 
 We provide bash scripts for running the TorBox Media Center easily by simply copying the script to your server or computer, and running it, following the prompts. This can be helpful if you aren't familiar with Docker, permissions or servers in general. Simply choose one in [this folder](https://github.com/TorBox-App/torbox-media-center/blob/main/scripts) that pertains to your system and run it in the terminal.

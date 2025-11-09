@@ -3,6 +3,7 @@ from library.filesystem import MOUNT_PATH
 import logging
 from functions.appFunctions import getAllUserDownloads
 import shutil
+from functions.openrouterNaming import suggest_strm_name
 
 def generateFolderPath(data: dict):
     """
@@ -39,17 +40,22 @@ def generateFolderPath(data: dict):
         )
     return folder_path
 
-def generateStremFile(file_path: str, url: str, type: str, file_name: str):
-    if file_path is None:
+def generateStremFile(file_path: str, url: str, download: dict):
+    if file_path is None or not download:
         return
-    if type == "movie":
-        type = "movies"
-    elif type == "series":
-        type = "series"
-    elif type == "anime":
-        type = "series"
+    file_name = download.get("metadata_filename") or download.get("file_name")
+    if not file_name:
+        logging.debug("Skipping download with missing file name.")
+        return
+    media_type = (download.get("metadata_mediatype") or "movie").lower()
+    if media_type == "movie":
+        type_folder = "movies"
+    elif media_type in ("series", "anime"):
+        type_folder = "series"
+    else:
+        type_folder = "movies"
 
-    full_path = os.path.join(MOUNT_PATH, type, file_path)
+    full_path = os.path.join(MOUNT_PATH, type_folder, file_path)
 
     try:
         os.makedirs(full_path, exist_ok=True)
@@ -67,13 +73,37 @@ def generateStremFile(file_path: str, url: str, type: str, file_name: str):
         logging.error(f"Error creating strm file: {e}")
         return False
 
+
+def _apply_openrouter_naming(download: dict) -> dict:
+    suggestion = suggest_strm_name(download)
+    if not suggestion:
+        return download
+    updated = False
+    filename = suggestion.get("filename")
+    if filename:
+        download["metadata_filename"] = filename
+        updated = True
+    media_type = suggestion.get("media_type")
+    if media_type:
+        download["metadata_mediatype"] = media_type
+        updated = True
+    if updated:
+        logging.debug(
+            "OpenRouter normalized download %s -> %s (%s)",
+            download.get("file_name"),
+            download.get("metadata_filename"),
+            download.get("metadata_mediatype"),
+        )
+    return download
+
 def runStrm():
     all_downloads = getAllUserDownloads()
     for download in all_downloads:
+        download = _apply_openrouter_naming(download)
         file_path = generateFolderPath(download)
         if file_path is None:
             continue
-        generateStremFile(file_path, download.get("download_link"), download.get("metadata_mediatype"), download.get("metadata_filename"))
+        generateStremFile(file_path, download.get("download_link"), download)
 
     logging.debug(f"Updated {len(all_downloads)} strm files.")
 
